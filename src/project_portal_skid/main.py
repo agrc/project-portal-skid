@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # * coding: utf8 *
 """
-Run the SKIDNAME script as a cloud function.
+Run the project_portal_skid script as a cloud function.
 """
 
 import base64
@@ -30,7 +30,7 @@ except ImportError:
 
 
 def _get_secrets():
-    """A helper method for loading secrets from either a GCF mount point or the local src/skidname/secrets/secrets.json file
+    """A helper method for loading secrets from either a GCF mount point or the local src/project_portal_skid/secrets/secrets.json file
 
     Raises:
         FileNotFoundError: If the secrets file can't be found.

@@ -5,7 +5,7 @@ config.py: Configuration values. Secrets to be handled with Secrets Manager
 import logging
 import socket
 
-SKID_NAME = ""
+SKID_NAME = "project-portal-skid"
 
 AGOL_ORG = "https://utah.maps.arcgis.com"
 SENDGRID_SETTINGS = {  #: Settings for SendGridHandler

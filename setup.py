@@ -11,18 +11,18 @@ from setuptools import find_packages, setup
 
 #: Load version from source file
 version = {}
-version_file = Path(__file__).parent / "src" / "skidname" / "version.py"
+version_file = Path(__file__).parent / "src" / "project_portal_skid" / "version.py"
 exec(version_file.read_text(), version)
 
 setup(
-    name="skidname",
+    name="project-portal-skid",
     version=version["__version__"],
     license="MIT",
     long_description=(Path(__file__).parent / "README.md").read_text(),
     long_description_content_type="text/markdown",
     author="UGRC",
     author_email="ugrc-developers@utah.gov",
-    url="https://github.com/agrc/skid",
+    url="https://github.com/agrc/project-portal-skid",
     packages=find_packages("src"),
     package_dir={"": "src"},
     include_package_data=True,
@@ -59,7 +59,7 @@ setup(
     ],
     entry_points={
         "console_scripts": [
-            "skidname = skidname.main:function",
+            "project-portal-skid = project_portal_skid.main:function",
         ]
     },
 )
