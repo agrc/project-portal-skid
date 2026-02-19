@@ -1,0 +1,58 @@
+name: Push Events
+
+on:
+  push:
+    branches:
+      - main
+      - dev
+
+concurrency:
+  group: "${{ github.head_ref || github.ref }}"
+  cancel-in-progress: true
+
+jobs:
+  release:
+    name: Create release
+    if: github.ref_name == 'main'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+
+    steps:
+      - name: 🚀 Create Release
+        uses: agrc/release-composite-action@v1
+        with:
+          repo-token: ${{ secrets.GITHUB_TOKEN }}
+          github-app-id: ${{ secrets.UGRC_RELEASE_BOT_APP_ID }}
+          github-app-key: ${{ secrets.UGRC_RELEASE_BOT_APP_KEY }}
+          github-app-name: ${{ secrets.UGRC_RELEASE_BOT_NAME }}
+          github-app-email: ${{ secrets.UGRC_RELEASE_BOT_EMAIL }}
+          release-type: python
+          extra-files: src/skidname/version.py
+
+  deploy-dev:
+    name: Deploy to Cloud Run (dev)
+    runs-on: ubuntu-latest
+    if: github.ref_name == 'dev'
+    environment:
+      name: dev
+    permissions:
+      id-token: write
+      contents: read
+
+    steps:
+      - name: ⬇️ Set up code
+        uses: actions/checkout@v6
+        with:
+          show-progress: false
+
+      - name: 🚀 Deploy
+        uses: ./.github/actions/deploy
+        timeout-minutes: 15
+        with:
+          project_id: ${{ secrets.PROJECT_ID }}
+          identity_provider: ${{ secrets.IDENTITY_PROVIDER }}
+          service_account_email: ${{ secrets.SERVICE_ACCOUNT_EMAIL }}
+          pause_schedule_job: "yes"
+          github_token: ${{ secrets.GITHUB_TOKEN }}
