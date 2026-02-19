@@ -25,7 +25,7 @@
     "pytest",
     "rindex",
     "sgid",
-    "skidname",
+    "project_portal_skid",
     "skinname",
     "UGRC",
     "venv",

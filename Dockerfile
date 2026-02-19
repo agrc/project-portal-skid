@@ -14,4 +14,4 @@ WORKDIR /app
 RUN pip install .
 
 USER dummy
-ENTRYPOINT ["skidname-skid"]
+ENTRYPOINT ["project-portal-skid"]

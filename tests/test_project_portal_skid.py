@@ -1,4 +1,4 @@
-from skidname import main
+from project_portal_skid import main
 
 
 def test_get_secrets_from_gcp_location(mocker):

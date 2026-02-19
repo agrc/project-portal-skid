@@ -89,8 +89,8 @@ runs:
         for i in $(gcloud scheduler jobs list --location=us-central1 --uri); do
           gcloud scheduler jobs delete $i --quiet
         done
-        gcloud scheduler jobs create http skidname-schedule \
-          --description="Trigger the skidname-skid bot once a week on saturday evening" \
+        gcloud scheduler jobs create http project-portal-skid-schedule \
+          --description="Trigger the project-portal-skid bot once a week on saturday evening" \
           --schedule="0 3 * * 1" \
           --time-zone=America/Denver \
           --location=us-central1 \
@@ -101,4 +101,4 @@ runs:
       shell: bash
       if: inputs.pause_schedule_job != 'no'
       run: |
-        gcloud scheduler jobs pause "skidname-schedule" --location=us-central1 --quiet
+        gcloud scheduler jobs pause "project-portal-skid-schedule" --location=us-central1 --quiet
