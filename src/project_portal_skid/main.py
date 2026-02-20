@@ -8,15 +8,21 @@ import base64
 import json
 import logging
 import sys
+import time
 from datetime import datetime
 from pathlib import Path
 from tempfile import TemporaryDirectory
 from types import SimpleNamespace
+from typing import Any, Dict, List, Optional
 
 import arcgis
 import functions_framework
+import geopandas as gpd
+import pandas as pd
+import requests
 from cloudevents.http import CloudEvent
 from palletjack import extract, load, transform, utils
+from shapely.geometry import Point
 from supervisor.message_handlers import SendGridHandler
 from supervisor.models import MessageDetails, Supervisor
 
@@ -51,6 +57,91 @@ def _get_secrets():
         return json.loads((secret_folder / "secrets.json").read_text(encoding="utf-8"))
 
     raise FileNotFoundError("Secrets folder not found; secrets not loaded.")
+
+
+def _fetch_projects(
+    api_key: str, base_url: str = "https://api.upp.utah.gov/beta/projects", page_size: int = 10000
+) -> List[Dict[str, Any]]:
+    """Fetch all project records (dicts) from the Utah Project Portal API.
+
+    This returns the raw list of project dictionaries and handles cursor-based
+    pagination using `nextSearchAfter`.
+    """
+
+    if page_size is None or page_size <= 0:
+        page_size = 10000
+    page_size = min(page_size, 10000)
+
+    session = requests.Session()
+    headers = {"x-api-key": api_key}
+    params: Dict[str, Any] = {"pageSize": page_size}
+
+    all_projects: List[Dict[str, Any]] = []
+    search_after: Optional[str] = None
+
+    while True:
+        if search_after:
+            params["searchAfter"] = search_after
+        try:
+            resp = session.get(base_url, headers=headers, params=params, timeout=30)
+        except requests.RequestException:
+            raise
+
+        # Handle rate limiting simply by sleeping and retrying
+        if resp.status_code == 429:
+            time.sleep(1)
+            continue
+
+        resp.raise_for_status()
+
+        data = resp.json()
+        page_projects = data.get("projects") or data.get("results") or []
+
+        if not isinstance(page_projects, list):
+            raise ValueError("Unexpected API response format: 'projects' is not a list")
+
+        all_projects.extend(page_projects)
+
+        search_after = data.get("nextSearchAfter")
+        if not search_after:
+            break
+
+    return all_projects
+
+
+def _make_point(row: Dict[str, Any]) -> Optional[Point]:
+    """Create a Point from a project record's `locationGeoPoint`.
+
+    Returns None if location is missing or invalid.
+    """
+    loc = row.get("locationGeoPoint") if hasattr(row, "get") else None
+    if not loc or not isinstance(loc, dict):
+        return None
+    lat = loc.get("lat")
+    lon = loc.get("lon")
+    if lat is None or lon is None:
+        return None
+    try:
+        return Point(lon, lat)
+    except Exception:
+        return None
+
+
+def _projects_to_gdf(projects: List[Dict[str, Any]]) -> gpd.GeoDataFrame:
+    """Convert a list of project dicts into a GeoDataFrame with Point geometry.
+
+    Records without a valid `locationGeoPoint` will have null geometry.
+    """
+
+    df = pd.DataFrame(projects)
+
+    if not df.empty:
+        geometry = df.apply(lambda r: _make_point(r), axis=1)
+        gdf = gpd.GeoDataFrame(df, geometry=geometry, crs="EPSG:4326")
+    else:
+        gdf = gpd.GeoDataFrame(df, geometry=pd.Series(dtype="object"), crs="EPSG:4326")
+
+    return gdf
 
 
 def _initialize(log_path, sendgrid_api_key):
@@ -146,9 +237,8 @@ def process():
 
         module_logger.info("Log messages with module_logger.info() or module_logger.debug()")
 
-        #: Create a extract object to load your new data
-        extractor = extract.PostgresLoader("host", "database", "user", "password")
-        new_data_df = extractor.read_table_into_dataframe("table_name", "index_column", "crs", "shape_column")
+        raw_projects = _fetch_projects(secrets.PROJECT_PORTAL_API_KEY)
+        projects_gdf = _projects_to_gdf(raw_projects)
 
         #: Transform your data
         new_data_df = new_data_df["new_column"] = "do custom transform stuff here"
