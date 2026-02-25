@@ -35,7 +35,7 @@ setup(
         "Topic :: Utilities",
     ],
     project_urls={
-        "Issue Tracker": "https://github.com/agrc/skid/issues",
+        "Issue Tracker": "https://github.com/agrc/project-portal-skid/issues",
     },
     keywords=["gis"],
     install_requires=[
