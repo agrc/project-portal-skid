@@ -144,6 +144,32 @@ def _projects_to_gdf(projects: List[Dict[str, Any]]) -> gpd.GeoDataFrame:
     return gdf
 
 
+def _replace_null_geometries(gdf: gpd.GeoDataFrame) -> tuple[gpd.GeoDataFrame, int]:
+    """Replace null geometries in a GeoDataFrame with a Point at (0, 0).
+
+    Parameters
+    ----------
+    gdf : gpd.GeoDataFrame
+        The GeoDataFrame whose null geometries will be replaced.
+
+    Returns
+    -------
+    gpd.GeoDataFrame
+        The GeoDataFrame with null geometries replaced by Point(0, 0).
+    int
+        The count of geometries that were null and replaced.
+    """
+
+    null_mask = gdf.geometry.isna()
+    null_count = null_mask.sum()
+    if null_count:
+        logging.getLogger(config.SKID_NAME).debug("Replacing %d null geometry(ies) with Point(0, 0)", null_count)
+        gdf = gdf.copy()
+        gdf.loc[null_mask, gdf.geometry.name] = Point(0, 0)
+
+    return gdf, null_count
+
+
 def _initialize(log_path, sendgrid_api_key):
     """A helper method to set up logging and supervisor
 
@@ -231,25 +257,22 @@ def process():
         #: Get our GIS object via the ArcGIS API for Python
         gis = arcgis.gis.GIS(config.AGOL_ORG, secrets.AGOL_USER, secrets.AGOL_PASSWORD)
 
-        #########################################################################
-        #: Use the various palletjack classes and other code to do your work here
-        #########################################################################
-
-        module_logger.info("Log messages with module_logger.info() or module_logger.debug()")
-
         raw_projects = _fetch_projects(secrets.PROJECT_PORTAL_API_KEY)
         projects_gdf = _projects_to_gdf(raw_projects)
+        module_logger.info("Loaded %d projects", len(projects_gdf))
 
         #: Transform your data
-        new_data_df = new_data_df["new_column"] = "do custom transform stuff here"
-        new_data_df = transform.DataCleaning.rename_dataframe_columns_for_agol(new_data_df)
+        new_data_gdf, null_count = _replace_null_geometries(projects_gdf)
+        new_data_gdf = transform.DataCleaning.rename_dataframe_columns_for_agol(new_data_gdf)
+        new_data_gdf = transform.DataCleaning.switch_to_datetime(new_data_gdf, ["dateCreated", "dateModified"])
 
-        #: Use retry for operations that may fail randomly (network issues, etc)
-        utils.retry("method_to_retry", "arg1", keyword_arg="arg2")
+        new_data_gdf.drop(columns=["clientId", "clientGroupId", "programIds", "locationGeoPoint"], inplace=True)
+        new_data_gdf.rename(columns={"geometry": "SHAPE"}, inplace=True)
+        new_data_gdf.set_geometry("SHAPE", inplace=True)
 
         #: Create a load object to load your new data
-        loader = load.FeatureServiceUpdater(gis, "item_id")
-        loader.update_features(new_data_df)
+        loader = load.ServiceUpdater(gis, secrets.PROJECT_PORTAL_DATA_ITEMID, working_dir=tempdir_path)
+        loader.truncate_and_load(new_data_gdf)
 
         end = datetime.now()
 
@@ -262,8 +285,8 @@ def process():
             f"Start time: {start.strftime('%H:%M:%S')}",
             f"End time: {end.strftime('%H:%M:%S')}",
             f"Duration: {str(end - start)}",
-            #: Add other rows here containing summary info captured/calculated during the working portion of the skid,
-            #: like the number of rows updated or the number of successful attachment overwrites.
+            f"Total projects loaded: {len(projects_gdf)}",
+            f"Null geometries set to Null Island: {null_count}",
         ]
 
         summary_message.message = "\n".join(summary_rows)
