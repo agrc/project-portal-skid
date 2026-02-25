@@ -283,3 +283,70 @@ class TestProjectsToGdf:
         assert isinstance(result.iloc[0].geometry, Point)
         assert result.iloc[1].geometry is None
         assert isinstance(result.iloc[2].geometry, Point)
+
+
+# ── _replace_null_geometries ───────────────────────────────────────────────────
+
+
+class TestReplaceNullGeometries:
+    def _make_gdf(self, geometries):
+        """Create a GeoDataFrame from a list of geometries (Point or None)."""
+
+        return gpd.GeoDataFrame({"id": range(len(geometries))}, geometry=geometries, crs="EPSG:4326")
+
+    def test_replace_null_geometries_returns_zero_count_when_no_nulls(self):
+        """A GeoDataFrame with no null geometries returns the original data and count 0."""
+        gdf = self._make_gdf([Point(1, 2), Point(3, 4)])
+
+        result_gdf, null_count = main._replace_null_geometries(gdf)
+
+        assert null_count == 0
+        assert len(result_gdf) == 2
+        assert result_gdf.iloc[0].geometry == Point(1, 2)
+        assert result_gdf.iloc[1].geometry == Point(3, 4)
+
+    def test_replace_null_geometries_replaces_single_null_with_point_zero(self):
+        """A single null geometry is replaced with Point(0, 0) and count is 1."""
+        gdf = self._make_gdf([None])
+
+        result_gdf, null_count = main._replace_null_geometries(gdf)
+
+        assert null_count == 1
+        assert result_gdf.iloc[0].geometry == Point(0, 0)
+
+    def test_replace_null_geometries_replaces_all_nulls_and_returns_correct_count(self):
+        """All null geometries are replaced with Point(0, 0) and count matches the number of nulls."""
+        gdf = self._make_gdf([None, None, None])
+
+        result_gdf, null_count = main._replace_null_geometries(gdf)
+
+        assert null_count == 3
+        assert all(result_gdf.geometry == Point(0, 0))
+
+    def test_replace_null_geometries_only_replaces_null_rows_in_mixed_gdf(self):
+        """Only null geometry rows are replaced; valid geometries are preserved."""
+        gdf = self._make_gdf([Point(1, 2), None, Point(3, 4)])
+
+        result_gdf, null_count = main._replace_null_geometries(gdf)
+
+        assert null_count == 1
+        assert result_gdf.iloc[0].geometry == Point(1, 2)
+        assert result_gdf.iloc[1].geometry == Point(0, 0)
+        assert result_gdf.iloc[2].geometry == Point(3, 4)
+
+    def test_replace_null_geometries_does_not_mutate_original_gdf(self):
+        """The original GeoDataFrame is not modified when null geometries are replaced."""
+        gdf = self._make_gdf([None, Point(1, 2)])
+        original_geom = gdf.iloc[0].geometry
+
+        main._replace_null_geometries(gdf)
+
+        assert gdf.iloc[0].geometry is original_geom
+
+    def test_replace_null_geometries_returns_geodataframe_type(self):
+        """The returned object is always a GeoDataFrame."""
+        gdf = self._make_gdf([Point(1, 2)])
+
+        result_gdf, _ = main._replace_null_geometries(gdf)
+
+        assert isinstance(result_gdf, gpd.GeoDataFrame)
