@@ -6,7 +6,7 @@ This skid extracts data from the [Utah Project Portal](https://upp.utah.gov/) an
 
 ## Process
 
-The skid uses the [Utah Project Portal API](https://api.utahprojects.org) and an API key generated on the homepage to get all the projects available on the Portal and load them into a GeoDataFrame. The lat/long coordinates from the source data are converted into WGS84 points.
+The skid uses the [Utah Project Portal API](https://api.upp.utah.gov) and an API key generated on the homepage to get all the projects available on the Portal and load them into a GeoDataFrame. The lat/long coordinates from the source data are converted into WGS84 points.
 
 The project data are then cleaned, which includes creating points on Null Island (0, 0) for any projects lacking lat/long data.
 
