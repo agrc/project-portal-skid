@@ -4,7 +4,6 @@
 Run the project_portal_skid script as a cloud function.
 """
 
-import base64
 import json
 import logging
 import sys
@@ -16,12 +15,10 @@ from types import SimpleNamespace
 from typing import Any, Dict, List, Optional
 
 import arcgis
-import functions_framework
 import geopandas as gpd
 import pandas as pd
 import requests
-from cloudevents.http import CloudEvent
-from palletjack import extract, load, transform, utils
+from palletjack import load, transform
 from shapely.geometry import Point
 from supervisor.message_handlers import SendGridHandler
 from supervisor.models import MessageDetails, Supervisor
@@ -297,32 +294,6 @@ def process():
         #: Remove file handler so the tempdir will close properly
         loggers = [logging.getLogger(config.SKID_NAME), logging.getLogger("palletjack")]
         _remove_log_file_handlers(log_name, loggers)
-
-
-@functions_framework.cloud_event
-def subscribe(cloud_event: CloudEvent) -> None:
-    """Entry point for Google Cloud Function triggered by pub/sub event
-
-    Args:
-         cloud_event (CloudEvent):  The CloudEvent object with data specific to this type of
-                        event. The `type` field maps to
-                         `type.googleapis.com/google.pubsub.v1.PubsubMessage`.
-                        The `data` field maps to the PubsubMessage data
-                        in a base64-encoded string. The `attributes` field maps
-                        to the PubsubMessage attributes if any is present.
-    Returns:
-        None. The output is written to Cloud Logging.
-    """
-
-    #: This function must be called 'subscribe' to act as the Google Cloud Function entry point. It must accept the
-    #: CloudEvent object as the only argument.
-
-    #: You can get the message-body value from the Cloud Scheduler event sent via pub/sub to customize the run
-    if base64.b64decode(cloud_event.data["message"]["data"]).decode() == "foo":
-        pass
-
-    #: Call process() and any other functions you want to be run as part of the skid here.
-    process()
 
 
 #: Putting this here means you can call the file via `python main.py` and it will run. Useful for pre-GCF testing.
