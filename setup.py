@@ -51,7 +51,6 @@ setup(
             "pytest-watch==4.*",
             "pytest>=7,<10",
             "ruff==0.*",
-            "functions-framework>=3.8,<3.11",
         ]
     },
     setup_requires=[
@@ -59,7 +58,7 @@ setup(
     ],
     entry_points={
         "console_scripts": [
-            "project-portal-skid = project_portal_skid.main:function",
+            "project-portal-skid = project_portal_skid.main:process",
         ]
     },
 )
