@@ -23,13 +23,7 @@ from shapely.geometry import Point
 from supervisor.message_handlers import SendGridHandler
 from supervisor.models import MessageDetails, Supervisor
 
-#: This makes it work when calling with just `python <file>`/installing via pip and in the gcf framework, where
-#: the relative imports fail because of how it's calling the function.
-try:
-    from . import config, version
-except ImportError:
-    import config
-    import version
+from . import config, version
 
 
 def _get_secrets():
