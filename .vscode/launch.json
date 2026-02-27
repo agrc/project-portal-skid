@@ -6,11 +6,10 @@
     "configurations": [
 
         {
-            "name": "Python Debugger: Current File",
+            "name": "Python Debugger: Module",
             "type": "debugpy",
             "request": "launch",
-            "program": "${file}",
-            "console": "integratedTerminal"
+            "module": "project_portal_skid.main"
         }
     ]
 }
