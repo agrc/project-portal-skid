@@ -274,7 +274,7 @@ def process():
         end = datetime.now()
 
         summary_message = MessageDetails()
-        summary_message.subject = f"{config.SKID_NAME} Update Summary"
+        summary_message.subject = "Update Summary"
         summary_rows = [
             f"{config.SKID_NAME} update {start.strftime('%Y-%m-%d')}",
             "=" * 20,
@@ -283,7 +283,7 @@ def process():
             f"End time: {end.strftime('%H:%M:%S')}",
             f"Duration: {str(end - start)}",
             f"Total projects loaded: {len(projects_gdf)}",
-            f"Null geometries set to Null Island: {null_count}",
+            f"Empty geometries sent to Null Island: {null_count}",
         ]
 
         summary_message.message = "\n".join(summary_rows)
