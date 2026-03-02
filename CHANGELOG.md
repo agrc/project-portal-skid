@@ -1,5 +1,13 @@
 # Changelog
 
+## 1.0.0 (2026-03-02)
+
+
+### Features
+
+* **ai:** first shot at extracting from API ([b7bbada](https://github.com/agrc/project-portal-skid/commit/b7bbada58cd03b658858bc63581d1048837fea06))
+* transform and load data to agol ([14e2628](https://github.com/agrc/project-portal-skid/commit/14e2628d22a351c57d2490ad1def2f8a41727788))
+
 ## [1.0.1](https://github.com/agrc/skid/compare/v1.0.0...v1.0.1) (2026-01-29)
 
 
